@@ -1,0 +1,167 @@
+---
+title: "Cluster"
+author: "Md Mehedi Hassan"
+date: "6/4/2022"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Library
+```{r lib}
+suppressPackageStartupMessages({
+library(readr);
+library(tidyverse);
+library(cowplot);
+library(colorspace);
+library(GGally);
+library(factoextra);
+library(NbClust);
+library(cluster)
+  
+})
+
+```
+# Data Import and EDA
+```{r data}
+
+data <- read.csv("diabetes_data_upload.csv")
+
+
+data_eda <- data
+names(data)
+str(data)
+attach(data)
+
+p1 <- ggplot(data_eda, aes(x=class , y=Age))+  geom_violin(aes(fill=class))+  geom_boxplot()+  theme_classic()+theme(legend.position = "none")+scale_fill_brewer(palette = "Set1")
+p2 <- ggplot(data_eda, aes(x=Gender))+  geom_bar(aes(fill= class), position= "stack")+  theme_classic()+  theme(legend.position = "none")+scale_fill_brewer(palette = "Set1")
+p3 <- ggplot(data_eda, aes(x=Polyuria))+  geom_bar(aes(fill= class), position= "stack")+  theme_classic()+  theme(legend.position = "none")+scale_fill_brewer(palette = "Set1")
+p4 <- ggplot(data_eda, aes(x=Polydipsia))+geom_bar(aes(fill= class), position= "stack")+  theme_classic()+  theme(legend.position = "none")+scale_fill_brewer(palette = "Set1")
+p5 <- ggplot(data_eda, aes(x=sudden.weight.loss))+geom_bar(aes(fill= class), position= "stack")+  theme_classic()+  theme(legend.position = "none")+scale_fill_brewer(palette = "Set1")
+p6 <- ggplot(data_eda, aes(x=weakness))+geom_bar(aes(fill= class), position= "stack")+  theme_classic()+  theme(legend.position = "none")+scale_fill_brewer(palette = "Set1")
+p7 <- ggplot(data_eda, aes(x=Polyphagia))+geom_bar(aes(fill= class), position= "stack")+  theme_classic()+  theme(legend.position = "none")+scale_fill_brewer(palette = "Set1")
+p8 <- ggplot(data_eda, aes(x=Genital.thrush))+geom_bar(aes(fill= class), position= "stack")+  theme_classic()+  theme(legend.position = "none")+scale_fill_brewer(palette = "Set1")
+p9 <- ggplot(data_eda, aes(x=visual.blurring))+geom_bar(aes(fill= class), position= "stack")+  theme_classic()+  theme(legend.position = "none")+scale_fill_brewer(palette = "Set1")
+p10 <- ggplot(data_eda, aes(x=Itching))+geom_bar(aes(fill= class), position= "stack")+  theme_classic()+  theme(legend.position = "none")+scale_fill_brewer(palette = "Set1")
+p11 <- ggplot(data_eda, aes(x=Irritability))+geom_bar(aes(fill= class), position= "stack")+  theme_classic()+  theme(legend.position = "none")+scale_fill_brewer(palette = "Set1")
+p12 <- ggplot(data_eda, aes(x=delayed.healing))+geom_bar(aes(fill= class), position= "stack")+  theme_classic()+  theme(legend.position = "none")+scale_fill_brewer(palette = "Set1")
+p13 <- ggplot(data_eda, aes(x=partial.paresis))+geom_bar(aes(fill= class), position= "stack")+  theme_classic()+  theme(legend.position = "none")+scale_fill_brewer(palette = "Set1")
+p14 <- ggplot(data_eda, aes(x=muscle.stiffness))+geom_bar(aes(fill= class), position= "stack")+  theme_classic()+  theme(legend.position = "none")+scale_fill_brewer(palette = "Set1")
+
+p15 <- ggplot(data_eda, aes(x=Alopecia))+geom_bar(aes(fill= class), position= "stack")+  theme_classic()+  theme(legend.position = "none")+scale_fill_brewer(palette = "Set1")
+p16 <- ggplot(data_eda, aes(x=Obesity))+geom_bar(aes(fill= class), position= "stack")+  theme_classic()+  theme(legend.position = "none")+scale_fill_brewer(palette = "Set1")
+p17 <- ggplot(data_eda, aes(x=class))+geom_bar(aes(fill= class), position= "dodge")+  theme_classic()+  geom_label(stat = "count", aes(label = ..count..))+scale_fill_brewer(palette = "Set1")
+
+plot_grid(p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17)
+```
+
+# Correlation
+```{r cor}
+data_corr <- data %>% mutate_if(is.character, as.factor) %>% mutate_if(is.factor, as.numeric)
+knitr::kable(cor(data_corr))
+
+ggcorr(data_corr, method = c("everything", "pearson"),nbreaks = 4,
+       label=TRUE, label_round =2 ,legend.size = 5, vjust=0, hjust=0.8)+
+  theme(legend.position = "bottom")+
+  theme(title = element_text(size=7))
+```
+
+# Distance Plot
+```{r distance}
+# {x- mean(x)}/sd(x) scaling or mean, standard deviation scaling
+data_clust <- data_corr %>% select(-c(class, Age, Gender)) %>% scale()
+
+# Get Distance
+distance <- get_dist(data_clust)
+distance
+fviz_dist(distance, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"),
+          lab_size = 1)
+
+```
+# Finding optimal Cluster
+## Elbow Method
+
+```{r elbow}
+# K-Means clustering
+KmeansCluster <- NbClust(data_clust, distance = "euclidean",
+                         min.nc = 2, max.nc = 10, method = "kmeans")
+
+
+# Elbow method
+plot_elbow <- fviz_nbclust(data_clust, kmeans, method = "wss") +
+  geom_vline(xintercept = 3, linetype = 2)+
+  labs(subtitle = "Elbow method")
+plot_elbow
+```
+# Finding Optimal Cluster
+## Silhouette method
+
+```{r silhouette}
+plot_silhouette <- fviz_nbclust(data_clust, kmeans, method = "silhouette")+
+  labs(subtitle = "Silhouette method")
+plot_silhouette
+```
+# Finding Optimal Cluster
+# Gap statistic
+# nboot = 50 to keep the function speedy. 
+# recommended value: nboot= 10 for your analysis. (Bootstrapping)
+# Use verbose = FALSE to hide computing progression.
+```{r gap}
+plot_gapStatistic <- fviz_nbclust(data_clust, kmeans, nstart = 25,  method = "gap_stat", nboot = 100)+
+  labs(subtitle = "Gap statistic method")
+
+plot_gapStatistic
+```
+
+# Final Clustering 
+# k = 3
+```{r final3}
+################# Final k=3
+k_clust <- kmeans(data_clust, centers = 3, nstart = 25)
+
+fviz_cluster(k_clust, data= data_clust, labelsize = 8)+theme_classic()
+
+
+# Clusrer Centers
+knitr::kable(k_clust$centers)
+# Cluster Size
+k_clust$size
+#### Class with Cluster
+knitr::kable(table(data$class, k_clust$cluster))
+
+# age with Clusrer
+data %>%select(Age) %>%  mutate(cluster= k_clust$cluster) %>% 
+  group_by(cluster)  %>%  summarise_all("mean")
+```
+
+
+# Final Clustering
+# k = 10
+```{r final10}
+####### k=10
+k_clust_10 <- kmeans(data_clust, centers = 10, nstart = 25)
+
+fviz_cluster(k_clust_10, data= data_clust, labelsize = 8)+theme_classic()
+
+
+# Clusrer Centers
+knitr::kable(k_clust_10$centers)
+# Cluster Size
+k_clust_10$size
+#### Class with Cluster
+knitr::kable(table(data$class, k_clust_10$cluster))
+
+# age with Clusrer
+data %>%select(Age) %>%  mutate(cluster= k_clust_10$cluster) %>% 
+  group_by(cluster)  %>%  summarise_all("mean")
+
+```
+
+
+
+
+
+
+

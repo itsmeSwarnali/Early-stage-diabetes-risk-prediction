@@ -1,0 +1,5 @@
+library(readr)
+library(tidyverse)
+library(cowplot)
+library(colorspace)
+data <- read.csv("diabetes_data_upload.csv")
